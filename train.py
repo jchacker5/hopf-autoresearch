@@ -17,15 +17,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-def verify_macos_env():
-    if sys.platform != "darwin":
-        raise RuntimeError(f"This script requires macOS with Metal. Detected platform: {sys.platform}")
-    if not torch.backends.mps.is_available():
-        raise RuntimeError("MPS (Metal Performance Shaders) is not available. Ensure you are running on Apple Silicon with a compatible PyTorch build.")
-    print("Environment verified: macOS detected with Metal (MPS) hardware acceleration available.")
+def verify_compute_env():
+    if torch.cuda.is_available():
+        print("Environment: CUDA GPU available.")
+    elif sys.platform == "darwin" and torch.backends.mps.is_available():
+        print("Environment: macOS with Metal (MPS) available.")
+    else:
+        print("Environment: CPU fallback (training will be slow).")
     print()
 
-verify_macos_env()
+verify_compute_env()
 
 from prepare import MAX_SEQ_LEN, TIME_BUDGET, Tokenizer, make_dataloader, evaluate_bpb
 
@@ -60,6 +61,62 @@ def apply_rotary_emb(x, cos, sin):
     y1 = x1 * cos + x2 * sin
     y2 = x1 * (-sin) + x2 * cos
     return torch.cat([y1, y2], 3)
+
+
+# ---------------------------------------------------------------------------
+# Hopf Latent Spaces (topological inductive bias)
+# ---------------------------------------------------------------------------
+
+def hopf_fibration(q):
+    """Map unit quaternions [..., 4] to S^2 base and S^1 fiber (cos, sin)."""
+    w, x, y, z = q.unbind(-1)
+    base = torch.stack([
+        2.0 * (w * x + y * z),
+        2.0 * (w * y - z * x),
+        w * w - x * x - y * y + z * z,
+    ], dim=-1)
+    base = F.normalize(base, dim=-1, eps=1e-6)
+    phase = torch.atan2(y, w)
+    fiber = torch.stack([torch.cos(phase), torch.sin(phase)], dim=-1)
+    return base, fiber
+
+
+class HopfLatentProjector(nn.Module):
+    """Nested Hopf fibration projector: S^1 fibers over CP^n bases."""
+
+    def __init__(self, dim, num_levels=2):
+        super().__init__()
+        self.dim = dim
+        self.num_levels = num_levels
+        self.quat_dim = num_levels * 4
+        self.in_proj = nn.Linear(dim, self.quat_dim, bias=False)
+        self.out_proj = nn.Linear(num_levels * 5, dim, bias=False)
+        self.level_gates = nn.Parameter(torch.zeros(num_levels))
+
+    def forward(self, x):
+        quats = self.in_proj(x).view(*x.shape[:-1], self.num_levels, 4)
+        quats = F.normalize(quats, dim=-1, eps=1e-6)
+        bases, fibers = [], []
+        for level in range(self.num_levels):
+            q = quats[..., level, :]
+            gate = torch.sigmoid(self.level_gates[level])
+            q = F.normalize(gate * q + (1.0 - gate) * quats[..., level, :], dim=-1, eps=1e-6)
+            base, fiber = hopf_fibration(q)
+            bases.append(base)
+            fibers.append(fiber)
+        structured = torch.cat(bases + fibers, dim=-1)
+        return self.out_proj(structured)
+
+
+class HypersphereProjector(nn.Module):
+    """Ablation baseline: L2-normalize to unit sphere without Hopf structure."""
+
+    def __init__(self, dim):
+        super().__init__()
+        self.scale = nn.Parameter(torch.ones(1))
+
+    def forward(self, x):
+        return self.scale * F.normalize(x, dim=-1, eps=1e-6)
 
 
 class CausalSelfAttention(nn.Module):
@@ -133,25 +190,40 @@ class MLP(nn.Module):
 
 
 class Block(nn.Module):
-    def __init__(self, config, layer_idx):
+    def __init__(self, config, layer_idx, hopf_projector=None):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
+        self.hopf = hopf_projector
 
-    def forward(self, x, ve, cos_sin, window_size):
+    def forward(self, x, ve, cos_sin, window_size, hopf_alpha=0.0):
+        if self.hopf is not None:
+            x = hopf_alpha * self.hopf(x) + (1.0 - hopf_alpha) * x
         x = x + self.attn(norm(x), ve, cos_sin, window_size)
         x = x + self.mlp(norm(x))
         return x
 
 
 class GPT(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, use_hopf=False, hopf_levels=2, hopf_placement="input",
+                 use_hypersphere=False, hopf_alpha=0.5):
         super().__init__()
         self.config = config
+        self.use_hopf = use_hopf
+        self.hopf_placement = hopf_placement
+        self.use_hypersphere = use_hypersphere
+        self.hopf_alpha = hopf_alpha
         self.window_sizes = self._compute_window_sizes(config)
+        input_hopf = HopfLatentProjector(config.n_embd, hopf_levels) if use_hopf and hopf_placement == "input" else None
+        block_hopf = HopfLatentProjector(config.n_embd, hopf_levels) if use_hopf and hopf_placement == "per_block" else None
+        self.input_hopf = input_hopf
+        self.hypersphere = HypersphereProjector(config.n_embd) if use_hypersphere else None
         self.transformer = nn.ModuleDict({
             "wte": nn.Embedding(config.vocab_size, config.n_embd),
-            "h": nn.ModuleList([Block(config, i) for i in range(config.n_layer)]),
+            "h": nn.ModuleList([
+                Block(config, i, hopf_projector=block_hopf)
+                for i in range(config.n_layer)
+            ]),
         })
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
@@ -202,6 +274,14 @@ class GPT(nn.Module):
         self.transformer.wte.to(dtype=torch.bfloat16)
         for ve in self.value_embeds.values():
             ve.to(dtype=torch.bfloat16)
+        if self.input_hopf is not None:
+            s = 3**0.5 * n_embd**-0.5
+            torch.nn.init.uniform_(self.input_hopf.in_proj.weight, -s, s)
+            torch.nn.init.zeros_(self.input_hopf.out_proj.weight)
+        for block in self.transformer.h:
+            if block.hopf is not None:
+                torch.nn.init.uniform_(block.hopf.in_proj.weight, -s, s)
+                torch.nn.init.zeros_(block.hopf.out_proj.weight)
 
     def _precompute_rotary_embeddings(self, seq_len, head_dim, base=10000, device=None):
         if device is None:
@@ -259,14 +339,24 @@ class GPT(nn.Module):
     def setup_optimizer(self, unembedding_lr=0.004, embedding_lr=0.2, matrix_lr=0.02,
                         weight_decay=0.0, adam_betas=(0.8, 0.95), scalar_lr=0.5):
         model_dim = self.config.n_embd
-        matrix_params = list(self.transformer.h.parameters())
+        matrix_params = [
+            p for block in self.transformer.h
+            for name, p in block.named_parameters()
+            if not name.startswith("hopf.")
+        ]
         value_embeds_params = list(self.value_embeds.parameters())
         embedding_params = list(self.transformer.wte.parameters())
         lm_head_params = list(self.lm_head.parameters())
         resid_params = [self.resid_lambdas]
         x0_params = [self.x0_lambdas]
-        assert len(list(self.parameters())) == (len(matrix_params) + len(embedding_params) +
-            len(lm_head_params) + len(value_embeds_params) + len(resid_params) + len(x0_params))
+        hopf_params = []
+        if self.input_hopf is not None:
+            hopf_params += list(self.input_hopf.parameters())
+        if self.hypersphere is not None:
+            hopf_params += list(self.hypersphere.parameters())
+        for block in self.transformer.h:
+            if block.hopf is not None:
+                hopf_params += list(block.hopf.parameters())
         # Scale LR ∝ 1/√dmodel (tuned at 768 dim)
         dmodel_lr_scale = (model_dim / 768) ** -0.5
         print(f"Scaling AdamW LRs by 1/sqrt({model_dim}/768) = {dmodel_lr_scale:.6f}")
@@ -277,6 +367,11 @@ class GPT(nn.Module):
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.01, betas=adam_betas, eps=1e-10, weight_decay=0.0),
             dict(kind='adamw', params=x0_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
         ]
+        if hopf_params:
+            param_groups.append(dict(
+                kind='adamw', params=hopf_params, lr=matrix_lr * dmodel_lr_scale,
+                betas=adam_betas, eps=1e-10, weight_decay=0.0,
+            ))
         for shape in sorted({p.shape for p in matrix_params}):
             group_params = [p for p in matrix_params if p.shape == shape]
             param_groups.append(dict(
@@ -288,18 +383,24 @@ class GPT(nn.Module):
             group["initial_lr"] = group["lr"]
         return optimizer
 
-    def forward(self, idx, targets=None, reduction='mean'):
+    def forward(self, idx, targets=None, reduction='mean', hopf_alpha=None):
+        if hopf_alpha is None:
+            hopf_alpha = self.hopf_alpha
         B, T = idx.size()
         assert T <= self.cos.size(1)
         cos_sin = self.cos[:, :T], self.sin[:, :T]
 
         x = self.transformer.wte(idx)
         x = norm(x)
+        if self.hypersphere is not None:
+            x = self.hypersphere(x)
+        if self.input_hopf is not None:
+            x = hopf_alpha * self.input_hopf(x) + (1.0 - hopf_alpha) * x
         x0 = x
         for i, block in enumerate(self.transformer.h):
             x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
-            x = block(x, ve, cos_sin, self.window_sizes[i])
+            x = block(x, ve, cos_sin, self.window_sizes[i], hopf_alpha=hopf_alpha)
         x = norm(x)
 
         softcap = 15
@@ -484,6 +585,13 @@ ASPECT_RATIO = 64       # model_dim = depth * ASPECT_RATIO
 HEAD_DIM = 128          # target head dimension for attention
 WINDOW_PATTERN = "L"    # sliding window pattern: L=full, S=half context
 
+# Hopf Latent Spaces (see theory/HOPF_LATENT_SPACES.md)
+USE_HOPF_LATENT = False       # enable nested Hopf fibration projector
+HOPF_NUM_LEVELS = 2           # nesting depth (1 = single S^3 -> S^2 fibration)
+HOPF_MIX_ALPHA = 0.5          # blend: alpha * hopf(x) + (1-alpha) * x
+HOPF_PLACEMENT = "input"      # "input" (after embedding) or "per_block"
+USE_HYPERSPHERE_LATENT = False  # ablation: unit-sphere normalization only
+
 # Optimization
 TOTAL_BATCH_SIZE = 2**16 # ~65K tokens per optimizer step
 EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
@@ -543,7 +651,16 @@ config = build_model_config(DEPTH)
 print(f"Model config: {asdict(config)}")
 
 with torch.device("meta"):
-    model = GPT(config)
+    model = GPT(
+        config,
+        use_hopf=USE_HOPF_LATENT,
+        hopf_levels=HOPF_NUM_LEVELS,
+        hopf_placement=HOPF_PLACEMENT,
+        use_hypersphere=USE_HYPERSPHERE_LATENT,
+        hopf_alpha=HOPF_MIX_ALPHA,
+    )
+print(f"Hopf latent: {USE_HOPF_LATENT} (levels={HOPF_NUM_LEVELS}, alpha={HOPF_MIX_ALPHA}, placement={HOPF_PLACEMENT})")
+print(f"Hypersphere ablation: {USE_HYPERSPHERE_LATENT}")
 model.to_empty(device=device)
 model.init_weights()
 

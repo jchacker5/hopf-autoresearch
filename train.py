@@ -586,10 +586,10 @@ HEAD_DIM = 128          # target head dimension for attention
 WINDOW_PATTERN = "L"    # sliding window pattern: L=full, S=half context
 
 # Hopf Latent Spaces (see theory/HOPF_LATENT_SPACES.md)
-USE_HOPF_LATENT = False       # enable nested Hopf fibration projector
+USE_HOPF_LATENT = True       # enable nested Hopf fibration projector
 HOPF_NUM_LEVELS = 2           # nesting depth (1 = single S^3 -> S^2 fibration)
-HOPF_MIX_ALPHA = 0.5          # blend: alpha * hopf(x) + (1-alpha) * x
-HOPF_PLACEMENT = "input"      # "input" (after embedding) or "per_block"
+HOPF_MIX_ALPHA = 0.05          # blend: alpha * hopf(x) + (1-alpha) * x
+HOPF_PLACEMENT = "per_block"      # "input" (after embedding) or "per_block"
 USE_HYPERSPHERE_LATENT = False  # ablation: unit-sphere normalization only
 
 # Optimization

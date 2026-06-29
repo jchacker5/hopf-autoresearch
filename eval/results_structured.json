@@ -1,0 +1,338 @@
+{
+  "config": {
+    "hidden_dim": 96,
+    "hopf_alpha": 0.5,
+    "hopf_levels": 2,
+    "train_size": 10000,
+    "test_size": 2000,
+    "batch_size": 256,
+    "epochs": 300,
+    "lr": 0.001,
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "methods": [
+      "baseline",
+      "hopf",
+      "hypersphere"
+    ]
+  },
+  "runs": [
+    {
+      "task": "periodic",
+      "method": "baseline",
+      "seed": 0,
+      "rmse": 0.5472804788647104,
+      "metric": 0.5472804788647104,
+      "metric_name": "rmse",
+      "lower_is_better": true
+    },
+    {
+      "task": "periodic",
+      "method": "baseline",
+      "seed": 1,
+      "rmse": 0.5326941341357182,
+      "metric": 0.5326941341357182,
+      "metric_name": "rmse",
+      "lower_is_better": true
+    },
+    {
+      "task": "periodic",
+      "method": "baseline",
+      "seed": 2,
+      "rmse": 0.5338890301989473,
+      "metric": 0.5338890301989473,
+      "metric_name": "rmse",
+      "lower_is_better": true
+    },
+    {
+      "task": "periodic",
+      "method": "hopf",
+      "seed": 0,
+      "rmse": 0.5115152826347386,
+      "metric": 0.5115152826347386,
+      "metric_name": "rmse",
+      "lower_is_better": true
+    },
+    {
+      "task": "periodic",
+      "method": "hopf",
+      "seed": 1,
+      "rmse": 0.5064791991772404,
+      "metric": 0.5064791991772404,
+      "metric_name": "rmse",
+      "lower_is_better": true
+    },
+    {
+      "task": "periodic",
+      "method": "hopf",
+      "seed": 2,
+      "rmse": 0.4964332622686747,
+      "metric": 0.4964332622686747,
+      "metric_name": "rmse",
+      "lower_is_better": true
+    },
+    {
+      "task": "periodic",
+      "method": "hypersphere",
+      "seed": 0,
+      "rmse": 0.5196985089666585,
+      "metric": 0.5196985089666585,
+      "metric_name": "rmse",
+      "lower_is_better": true
+    },
+    {
+      "task": "periodic",
+      "method": "hypersphere",
+      "seed": 1,
+      "rmse": 0.515542869731515,
+      "metric": 0.515542869731515,
+      "metric_name": "rmse",
+      "lower_is_better": true
+    },
+    {
+      "task": "periodic",
+      "method": "hypersphere",
+      "seed": 2,
+      "rmse": 0.5119797852966151,
+      "metric": 0.5119797852966151,
+      "metric_name": "rmse",
+      "lower_is_better": true
+    },
+    {
+      "task": "hierarchical",
+      "method": "baseline",
+      "seed": 0,
+      "accuracy": 0.989,
+      "metric": 0.989,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "hierarchical",
+      "method": "baseline",
+      "seed": 1,
+      "accuracy": 0.9935,
+      "metric": 0.9935,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "hierarchical",
+      "method": "baseline",
+      "seed": 2,
+      "accuracy": 0.993,
+      "metric": 0.993,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "hierarchical",
+      "method": "hopf",
+      "seed": 0,
+      "accuracy": 0.989,
+      "metric": 0.989,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "hierarchical",
+      "method": "hopf",
+      "seed": 1,
+      "accuracy": 0.9935,
+      "metric": 0.9935,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "hierarchical",
+      "method": "hopf",
+      "seed": 2,
+      "accuracy": 0.991,
+      "metric": 0.991,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "hierarchical",
+      "method": "hypersphere",
+      "seed": 0,
+      "accuracy": 0.988,
+      "metric": 0.988,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "hierarchical",
+      "method": "hypersphere",
+      "seed": 1,
+      "accuracy": 0.992,
+      "metric": 0.992,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "hierarchical",
+      "method": "hypersphere",
+      "seed": 2,
+      "accuracy": 0.9875,
+      "metric": 0.9875,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "modular",
+      "method": "baseline",
+      "seed": 0,
+      "accuracy": 1.0,
+      "metric": 1.0,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "modular",
+      "method": "baseline",
+      "seed": 1,
+      "accuracy": 1.0,
+      "metric": 1.0,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "modular",
+      "method": "baseline",
+      "seed": 2,
+      "accuracy": 1.0,
+      "metric": 1.0,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "modular",
+      "method": "hopf",
+      "seed": 0,
+      "accuracy": 1.0,
+      "metric": 1.0,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "modular",
+      "method": "hopf",
+      "seed": 1,
+      "accuracy": 1.0,
+      "metric": 1.0,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "modular",
+      "method": "hopf",
+      "seed": 2,
+      "accuracy": 1.0,
+      "metric": 1.0,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "modular",
+      "method": "hypersphere",
+      "seed": 0,
+      "accuracy": 1.0,
+      "metric": 1.0,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "modular",
+      "method": "hypersphere",
+      "seed": 1,
+      "accuracy": 1.0,
+      "metric": 1.0,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    },
+    {
+      "task": "modular",
+      "method": "hypersphere",
+      "seed": 2,
+      "accuracy": 1.0,
+      "metric": 1.0,
+      "metric_name": "accuracy",
+      "lower_is_better": false
+    }
+  ],
+  "summary": {
+    "periodic": {
+      "baseline": {
+        "mean": 0.5379545477331252,
+        "std": 0.008098560844605758,
+        "metric_name": "rmse",
+        "lower_is_better": true,
+        "n_seeds": 3
+      },
+      "hopf": {
+        "mean": 0.5048092480268845,
+        "std": 0.00767843650843207,
+        "metric_name": "rmse",
+        "lower_is_better": true,
+        "n_seeds": 3
+      },
+      "hypersphere": {
+        "mean": 0.5157403879982628,
+        "std": 0.0038631507701481363,
+        "metric_name": "rmse",
+        "lower_is_better": true,
+        "n_seeds": 3
+      }
+    },
+    "hierarchical": {
+      "baseline": {
+        "mean": 0.9918333333333332,
+        "std": 0.0024664414311581445,
+        "metric_name": "accuracy",
+        "lower_is_better": false,
+        "n_seeds": 3
+      },
+      "hopf": {
+        "mean": 0.9911666666666666,
+        "std": 0.002254624876411478,
+        "metric_name": "accuracy",
+        "lower_is_better": false,
+        "n_seeds": 3
+      },
+      "hypersphere": {
+        "mean": 0.9891666666666667,
+        "std": 0.0024664414311581073,
+        "metric_name": "accuracy",
+        "lower_is_better": false,
+        "n_seeds": 3
+      }
+    },
+    "modular": {
+      "baseline": {
+        "mean": 1.0,
+        "std": 0.0,
+        "metric_name": "accuracy",
+        "lower_is_better": false,
+        "n_seeds": 3
+      },
+      "hopf": {
+        "mean": 1.0,
+        "std": 0.0,
+        "metric_name": "accuracy",
+        "lower_is_better": false,
+        "n_seeds": 3
+      },
+      "hypersphere": {
+        "mean": 1.0,
+        "std": 0.0,
+        "metric_name": "accuracy",
+        "lower_is_better": false,
+        "n_seeds": 3
+      }
+    }
+  }
+}

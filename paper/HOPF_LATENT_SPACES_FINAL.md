@@ -3,7 +3,7 @@
 **Joseph Defendre**  
 MSAI Candidate, Khoury College of Computer Sciences  
 Northeastern University, Boston, MA 02115, USA  
-j.defendre@northeastern.edu  
+defendre.j@northeastern.edu  
 June 2026
 
 ---

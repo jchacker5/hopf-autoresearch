@@ -1,0 +1,200 @@
+\documentclass[10pt,twocolumn]{article}
+
+\usepackage[margin=0.75in]{geometry}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{microtype}
+\usepackage{enumitem}
+
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+
+\title{\textbf{Hopf Latent Spaces: Nested Complex Hopf Fibrations as Geometric Inductive Bias for Structured Latent Representations in Neural Networks}}
+
+\author{
+  \textbf{Joseph Defendre}\\
+  MSAI Candidate, Khoury College of Computer Sciences\\
+  Northeastern University, Boston, MA 02115, USA\\
+  \texttt{defendre.j@northeastern.edu}
+}
+
+\date{June 2026}
+
+\begin{document}
+
+\twocolumn[
+\maketitle
+\begin{abstract}
+The Hopf fibration $S^1 \hookrightarrow S^3 \twoheadrightarrow S^2$ is a canonical non-trivial principal circle bundle with intrinsic linking between fibers. Nested generalizations $S^1 \hookrightarrow S^{2n+1} \twoheadrightarrow \mathbb{CP}^n$ provide a recursively constructible geometric hierarchy. We propose \textbf{Hopf Latent Spaces (HLS)}, a differentiable inductive bias that projects neural representations through quaternion-based Hopf maps, yielding explicit \textbf{base} coordinates (global structure) and \textbf{fiber} phases (periodic degrees of freedom).
+
+Across 29 language-model experiments, per-block Hopf projection with two nested levels improves validation bits-per-byte (BPB) when mix weight $\alpha$ is small. The best multi-seed configuration is $\alpha=0.03$ ($1.738 \pm 0.003$ vs.\ $1.750 \pm 0.000$ baseline, $\approx 0.7\%$ improvement). On periodic regression (3 seeds), HLS reduces RMSE by 6.2\% vs.\ Euclidean baseline. We interpret HLS as a \textbf{task-selective geometric prior}---most useful where periodic structure is salient---rather than a universal improvement to representation learning.
+\end{abstract}
+\vspace{0.4em}
+\noindent\textbf{Keywords:} Hopf fibration, geometric deep learning, latent space geometry, inductive bias, topological machine learning
+\vspace{1em}
+]
+
+\section{Introduction}
+
+Standard latent spaces in autoencoders, VAEs, and transformers are predominantly Euclidean. Such spaces lack built-in mechanisms for \emph{hierarchy}, \emph{periodicity}, and \emph{non-trivial topological organization}. Geometric deep learning has shown that aligning model geometry with data structure can improve generalization and interpretability~\cite{bronstein2021,nickel2017}.
+
+This work is motivated by an intuition from mathematical physics: nested Hopf fibrations appear in constructions that unify rotational, phase, and projective structure across scales. While a full universal field theory based on Hopf towers remains unproven, the \textbf{geometric metaphor} is productive: each complex dimension adds a shell hosting a distinct level of abstraction---local periodic structure on fibers, global relations on bases.
+
+\subsection{Contributions}
+\begin{enumerate}[leftmargin=*, nosep]
+  \item Formalization of differentiable Hopf Latent Projectors with nested quaternion maps and residual blending.
+  \item Integration into a transformer training stack (autoresearch-compatible).
+  \item Empirical study: 29 LM runs, 27 structured-task runs (3 seeds), 4 MNIST AE variants.
+  \item Negative results: input placement, strong $\alpha$, hypersphere LM ablation.
+\end{enumerate}
+
+\section{Background: The Hopf Fibration}
+
+Identify $S^3 \subset \mathbb{C}^2$ with unit pairs $(z_1,z_2)$, $|z_1|^2+|z_2|^2=1$. The Hopf map $\pi: S^3 \to S^2$ is:
+\begin{equation}
+\pi(z_1,z_2) = \big(|z_1|^2-|z_2|^2,\; 2\,\mathrm{Re}(z_1\bar{z}_2),\; 2\,\mathrm{Im}(z_1\bar{z}_2)\big).
+\end{equation}
+Each $p \in S^2$ has fiber $\pi^{-1}(p) \cong S^1$; distinct fibers are \textbf{linked}. Quaternion form $q=w+xi+yj+zk$:
+\begin{equation}
+\pi(q) = \big(2(wx+yz),\; 2(wy-zx),\; w^2-x^2-y^2+z^2\big).
+\end{equation}
+Fiber phase $\theta = \mathrm{atan2}(y,w)$. Stacking $L$ quaternion blocks approximates nested shells over $\mathbb{CP}^n$ (Fig.~\ref{fig:hopf}).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig1_hopf_schematic.pdf}
+  \caption{Hopf fibration schematic: circle fibers $S^1$ over base $S^2$. Linked fibers provide topological organization absent in flat $\mathbb{R}^d$ latents.}
+  \label{fig:hopf}
+\end{figure}
+
+\section{Design Intuition}
+
+\emph{This section states design intuition, not proven theorems.}
+
+\textbf{Fiber $\approx$ periodic, base $\approx$ context.} Many problems contain cyclic degrees of freedom (phase, rhythm, modular arithmetic) and contextual degrees of freedom (role, global state). Hopf explicitly separates $S^1$ phase from $S^2$ base.
+
+\textbf{Linking as regularization.} Linked fibers cannot collapse independently; light per-block projection may act as a soft topological regularizer.
+
+\textbf{Residual blending.} Hard projection disrupts gradients. We use:
+\begin{equation}
+x' = \alpha \cdot \mathrm{Hopf}(x) + (1-\alpha)\cdot x.
+\end{equation}
+Empirically $\alpha \in \{0.03,0.05\}$ helps per-block; $\alpha \ge 0.08$ fails (Fig.~\ref{fig:alpha}).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig2_architecture.pdf}
+  \caption{Per-block Hopf placement inside transformer blocks (winning configuration).}
+  \label{fig:arch}
+\end{figure}
+
+\section{Method}
+
+\subsection{Hopf Latent Projector}
+Given $x \in \mathbb{R}^d$: (1)~linear map to $L$ quaternions; (2)~normalize to $S^3$; (3)~Hopf map to base $b_\ell \in \mathbb{R}^3$ and fiber $(\cos\theta_\ell,\sin\theta_\ell)$; (4)~concatenate and reproject. Placement: \texttt{input} or \texttt{per\_block}. Baselines: Euclidean, hypersphere.
+
+\subsection{Experiments}
+\textbf{LM:} 11.5M-param GPT, 5-min budget, \texttt{val\_bpb} metric (Karpathy autoresearch). \textbf{Structured:} 96-dim MLP, periodic/hierarchical/modular synthetic data, 3 seeds. \textbf{MNIST AE:} Conv encoder-decoder, latent dim 64.
+
+\section{Results}
+
+\subsection{Language Modeling}
+Phase A (17 autoresearch runs): single-seed best at $\alpha=0.05$, BPB $1.739$ vs.\ $1.750$ baseline. Phase B (2 seeds): $\alpha=0.03$ is the stable winner (Table~\ref{tab:lm}, Fig.~\ref{fig:lm}).
+
+\begin{table}[t]
+  \centering
+  \caption{Multi-seed LM results (seeds 42--43). Lower BPB is better.}
+  \label{tab:lm}
+  \small
+  \begin{tabular}{lcc}
+    \toprule
+    Configuration & BPB & $\Delta$ \\
+    \midrule
+    Euclidean baseline & $1.750 \pm 0.000$ & --- \\
+    \textbf{Hopf per-block $\alpha{=}0.03$} & $\mathbf{1.738 \pm 0.003}$ & $\mathbf{-0.7\%}$ \\
+    Hopf per-block $\alpha{=}0.05$ & $1.744 \pm 0.013$ & $-0.4\%$ \\
+    Hopf input $\alpha{=}0.05$ & $1.746 \pm 0.014$ & $-0.3\%$ \\
+    Hypersphere & $1.796 \pm 0.028$ & $+2.6\%$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig3_lm_multiseed.pdf}
+  \caption{LM validation BPB across methods (2 seeds). Hopf $\alpha{=}0.03$ beats baseline; hypersphere fails.}
+  \label{fig:lm}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig6_alpha_sweep.pdf}
+  \caption{Mix weight $\alpha$ sensitivity. Small $\alpha$ wins; large $\alpha$ degrades performance.}
+  \label{fig:alpha}
+\end{figure}
+
+\subsection{Structured Synthetic Tasks}
+Hopf wins on \textbf{periodic} regression ($-6.2\%$ RMSE); hierarchy at ceiling; modular arithmetic trivial (Table~\ref{tab:struct}, Fig.~\ref{fig:struct}).
+
+\begin{table}[t]
+  \centering
+  \caption{Structured tasks (3 seeds, mean $\pm$ std).}
+  \label{tab:struct}
+  \small
+  \resizebox{\linewidth}{!}{%
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    Task & Metric & Eucl. & Hopf & Hypersph. \\
+    \midrule
+    Periodic & RMSE$\downarrow$ & $.538$ & $\mathbf{.505}$ & $.516$ \\
+    Hierarchy & Acc.$\uparrow$ & $\mathbf{.992}$ & $.991$ & $.989$ \\
+    Modular & Acc.$\uparrow$ & $1.00$ & $1.00$ & $1.00$ \\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig4_structured_tasks.pdf}
+  \caption{Structured task performance. Hopf shows clearest gain on periodic data.}
+  \label{fig:struct}
+\end{figure}
+
+\subsection{MNIST Autoencoder}
+Hypersphere wins reconstruction MSE; Hopf reduces fiber-phase variance (structured periodicity proxy, Fig.~\ref{fig:mnist}).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig5_mnist_ae.pdf}
+  \caption{MNIST AE: reconstruction vs.\ fiber phase variance trade-off.}
+  \label{fig:mnist}
+\end{figure}
+
+\section{Discussion}
+
+\textbf{Placement and strength dominate.} Per-block, low-$\alpha$ blending succeeded; input-level constraints failed. \textbf{Task alignment.} HLS aligns with periodic structure but not universal compression. \textbf{Physics intuition vs.\ evidence.} Hopf fibrations are generative design language, not guaranteed ML improvement.
+
+\subsection{Limitations}
+Short LM training (5 min); 2-seed confirmation only; Apple MPS hardware; simplified Hopf implementation; no formal topology metrics.
+
+\section{Conclusion}
+
+Hopf Latent Spaces translate classical geometry into a practical neural projector with \textbf{selective benefit}: periodic tasks ($+6.2\%$), small reproducible LM gain ($\alpha=0.03$), structured MNIST phases at recon cost. For MSAI publication, frame HLS as an exploratory inductive bias with strongest evidence in phase-structured domains.
+
+\section*{Acknowledgments}
+The author thanks Northeastern Khoury College MSAI program. Experiments used Karpathy autoresearch tooling on Apple Silicon.
+
+\begin{thebibliography}{9}
+\bibitem{hopf1931} H. Hopf (1931). \"Uber die Abbildungen der dreidimensionalen Sph\"are auf die Kugelfl\"ache.
+\bibitem{bronstein2021} M. Bronstein et al. (2021). Geometric Deep Learning.
+\bibitem{nickel2017} M. Nickel \& D. Kiela (2017). Poincar\'e Embeddings for Learning Hierarchical Representations.
+\bibitem{ganea2018} O. Ganea et al. (2018). Hyperbolic Neural Networks.
+\bibitem{trabelsi2018} C. Trabelsi et al. (2018). Deep Complex Networks.
+\bibitem{karpathy2026} A. Karpathy (2026). autoresearch: Autonomous LLM Pretraining Experiments.
+\end{thebibliography}
+
+\end{document}

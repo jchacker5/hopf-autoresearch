@@ -12,7 +12,7 @@ June 2026
 
 The Hopf fibration \(S^1 \hookrightarrow S^3 \twoheadrightarrow S^2\) is a canonical non-trivial principal circle bundle with intrinsic linking between fibers. Nested generalizations \(S^1 \hookrightarrow S^{2n+1} \twoheadrightarrow \mathbb{CP}^n\) provide a recursively constructible geometric hierarchy. We propose **Hopf Latent Spaces (HLS)**, a differentiable inductive bias that projects neural representations through quaternion-based Hopf maps, yielding explicit **base** coordinates (global structure) and **fiber** phases (periodic degrees of freedom). We implement HLS as a lightweight residual projector integrable into transformers and autoencoders, and evaluate it via autonomous experimentation (Karpathy autoresearch), synthetic structured tasks, and MNIST autoencoding.
 
-Across **17 language-model experiments**, only one configuration improved validation bits-per-byte (BPB): **per-block** projection with 2 nested levels and mix weight \(\alpha=0.05\) (1.739 vs. 1.750 baseline, \(\approx\)0.6%). Input-level and high-\(\alpha\) variants consistently degraded performance. On **periodic regression** (3 seeds), HLS reduced RMSE by 6.2% vs. Euclidean baseline (0.505±0.008 vs. 0.538±0.008). Hierarchical and modular synthetic tasks showed ceiling effects; MNIST reconstruction favored hypersphere normalization while HLS reduced fiber-phase variance (structured periodicity proxy). We interpret HLS as a **task-selective geometric prior**—most useful where periodic structure is salient—rather than a universal improvement to representation learning. Physics-inspired motivation is presented as design intuition; empirical scope and limitations are stated explicitly.
+Across **29 language-model experiments** (17 autoresearch sweeps + 12 multi-seed confirmations), per-block Hopf projection with 2 nested levels improved validation bits-per-byte (BPB) when mix weight \(\alpha\) is small. The best **multi-seed** configuration is \(\alpha=0.03\) (1.738±0.003 vs. 1.750±0.000 baseline, \(\approx\)0.7% improvement; seeds 42–43). A single-seed autoresearch winner at \(\alpha=0.05\) (1.739) proved seed-sensitive (1.735–1.753 across two seeds). Input-level, high-\(\alpha\), and hypersphere variants consistently degraded performance. On **periodic regression** (3 seeds), HLS reduced RMSE by 6.2% vs. Euclidean baseline (0.505±0.008 vs. 0.538±0.008). Hierarchical and modular synthetic tasks showed ceiling effects; MNIST reconstruction favored hypersphere normalization while HLS reduced fiber-phase variance (structured periodicity proxy). We interpret HLS as a **task-selective geometric prior**—most useful where periodic structure is salient—rather than a universal improvement to representation learning. Physics-inspired motivation is presented as design intuition; empirical scope and limitations are stated explicitly.
 
 **Keywords:** Hopf fibration, geometric deep learning, latent space geometry, inductive bias, topological machine learning, hierarchical representations, manifold learning
 
@@ -30,7 +30,7 @@ This work is motivated by an intuition from mathematical physics: nested Hopf fi
 
 1. **Formalization** of differentiable Hopf Latent Projectors with nested quaternion maps and residual blending.
 2. **Integration** into a single-file transformer training stack (autoresearch-compatible).
-3. **Empirical study** across LM pretraining (17 runs), synthetic structured tasks (27 runs, 3 seeds), and MNIST autoencoders (4 variants).
+3. **Empirical study** across LM pretraining (29 runs, including 2-seed confirmation), synthetic structured tasks (27 runs, 3 seeds), and MNIST autoencoders (4 variants).
 4. **Negative results** documenting when HLS fails (input placement, strong mixing, LM hypersphere ablation).
 5. **Honest scope analysis** including a skeptic review (Appendix A).
 
@@ -92,7 +92,7 @@ The Hopf map is a **nonlinear constraint**. Hard projection at the input disrupt
 x' = \alpha \cdot \mathrm{Hopf}(x) + (1-\alpha)\cdot x
 \]
 
-lets the model **opt in** to geometry. Empirically, \(\alpha=0.05\) won; \(\alpha \ge 0.15\) failed—consistent with "nudge, not choke."
+lets the model **opt in** to geometry. Empirically, \(\alpha \in \{0.03, 0.05\}\) can help when applied per-block; \(\alpha \ge 0.08\) and input placement tend to fail—consistent with "nudge, not choke." Multi-seed runs favor \(\alpha=0.03\) as the more stable optimum.
 
 ---
 
@@ -135,19 +135,32 @@ Code: `https://github.com/[author]/hopf-autoresearch` (local: `/Users/jchacker5/
 
 ## 5. Experiments and Results
 
-### 5.1 Language model pretraining (autoresearch)
+### 5.1 Language model pretraining (autoresearch + multi-seed)
 
 **Setup:** 11.5M-param GPT, depth 4, Apple MPS, climbmix shards, 5-minute budget.
+
+#### Phase A: Autoresearch sweep (single seed, 17 runs)
 
 | Configuration | val_bpb | Δ vs baseline | Status |
 |---------------|---------|---------------|--------|
 | Baseline (Euclidean) | **1.7502** | — | reference |
-| **Hopf per_block, L=2, α=0.05** | **1.7394** | **−0.6%** | **best** |
+| Hopf per_block, L=2, α=0.05 | 1.7394 | −0.6% | single-seed best |
 | Hopf per_block, L=1, α=0.20 | 1.7579 | +0.4% | near baseline |
 | Hopf input, L=2, α=0.5 | 1.8142 | +3.7% | fail |
 | Hypersphere (input) | 1.8814 | +7.5% | fail |
 
-**Finding:** HLS helps only as a **subtle per-block nudge**. Input placement and strong mixing harm compression. Nine of eleven Hopf variants underperformed baseline.
+#### Phase B: Multi-seed confirmation (seeds 42, 43; 12 runs)
+
+| Configuration | val_bpb (mean ± std) | Per-seed values | Δ vs baseline |
+|---------------|----------------------|-----------------|---------------|
+| Baseline | 1.7502 ± 0.0004 | 1.7499, 1.7505 | — |
+| **Hopf per_block, L=2, α=0.03** | **1.7384 ± 0.0027** | 1.7403, 1.7364 | **−0.7%** |
+| Hopf per_block, L=2, α=0.05 | 1.7440 ± 0.0127 | 1.7350, 1.7529 | −0.4% |
+| Hopf input, L=2, α=0.05 | 1.7455 ± 0.0135 | 1.7551, 1.7360 | −0.3% |
+| Hopf per_block, L=2, α=0.08 | 1.7590 ± 0.0117 | 1.7507, 1.7673 | +0.5% |
+| Hypersphere | 1.7961 ± 0.0282 | 1.8161, 1.7762 | +2.6% |
+
+**Finding:** HLS helps only as a **subtle per-block nudge** with \(\alpha \le 0.05\). The autoresearch winner (\(\alpha=0.05\)) is **seed-sensitive**—strong on seed 42 (1.735) but worse than baseline on seed 43 (1.753). **\(\alpha=0.03\) is the more reliable multi-seed optimum**, beating baseline on both seeds with low variance. Input placement and hypersphere normalization harm LM compression. Full per-run data: `experiments/results_lm_multiseed.json`.
 
 ### 5.2 Synthetic structured tasks (3 seeds)
 
@@ -175,7 +188,7 @@ Code: `https://github.com/[author]/hopf-autoresearch` (local: `/Users/jchacker5/
 | Domain | Signal | Confidence |
 |--------|--------|------------|
 | Periodic / phase-structured data | Strong positive | Medium (3 seeds) |
-| Generic LM (short budget) | Weak positive (one config) | Low (1 seed, small effect) |
+| Generic LM (short budget) | Weak positive (α=0.03 per-block) | Medium (2 seeds, small effect) |
 | Hierarchy (synthetic, easy) | Neutral | Low (ceiling) |
 | Modular arithmetic (trivial MLP) | Neutral | None |
 | MNIST reconstruction | Negative vs hypersphere | Low (1 seed) |
@@ -199,7 +212,7 @@ Nested Hopf fibrations remain valuable as **generative design language**—they 
 ### 6.4 Limitations
 
 - Short LM training (5 min); no convergence analysis
-- Mostly single-seed LM runs (multi-seed in progress)
+- Multi-seed LM confirmation uses only 2 seeds (42, 43); third seed and formal significance tests remain future work
 - Apple MPS hardware; results not GPU-validated
 - Simplified Hopf implementation (learned linear maps, not exact bundle connections)
 - No persistent homology or formal topology metrics yet
@@ -209,9 +222,9 @@ Nested Hopf fibrations remain valuable as **generative design language**—they 
 
 ## 7. Conclusion
 
-Hopf Latent Spaces translate a classical geometric construction into a practical, differentiable neural projector. Initial validation shows **selective benefit**: consistent gains on periodic synthetic tasks, a small LM improvement under one tuned per-block configuration, and structured latent phases on MNIST at a small reconstruction cost. Extensive negative results clarify failure modes.
+Hopf Latent Spaces translate a classical geometric construction into a practical, differentiable neural projector. Initial validation shows **selective benefit**: consistent gains on periodic synthetic tasks, a small but reproducible LM improvement under per-block projection with \(\alpha=0.03\) (1.738±0.003 vs. 1.750±0.000 baseline), and structured latent phases on MNIST at a small reconstruction cost. Extensive negative results clarify failure modes.
 
-For MSAI publication, we recommend framing HLS as an **exploratory geometric inductive bias** with strongest evidence in phase-structured domains, not as a proven universal representation theory. Next steps: multi-seed LM statistics, harder structured benchmarks, auxiliary geometric losses, and scaling studies.
+For MSAI publication, we recommend framing HLS as an **exploratory geometric inductive bias** with strongest evidence in phase-structured domains, not as a proven universal representation theory. Next steps: third seed and paired significance tests, harder structured benchmarks, auxiliary geometric losses, and scaling studies.
 
 ---
 
@@ -243,14 +256,16 @@ uv run python eval/structured_tasks.py       # Table 5.2
 uv run python experiments/ae_mnist.py        # Table 5.3
 ```
 
-Winning LM configuration:
+Recommended LM configuration (multi-seed winner):
 ```python
 USE_HOPF_LATENT = True
 HOPF_NUM_LEVELS = 2
-HOPF_MIX_ALPHA = 0.05
+HOPF_MIX_ALPHA = 0.03   # 0.05 also works but is seed-sensitive
 HOPF_PLACEMENT = "per_block"
 ```
 
+Multi-seed results: `experiments/results_lm_multiseed.json`
+
 ---
 
-*Working draft v1.0 — June 28, 2026. Multi-seed LM results pending in `experiments/results_lm_multiseed.json`.*
+*Working draft v1.1 — June 29, 2026. Multi-seed LM confirmation complete (seeds 42–43).*

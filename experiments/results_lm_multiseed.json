@@ -1,0 +1,168 @@
+{
+  "runs": [
+    {
+      "name": "baseline",
+      "hopf": false,
+      "hypersphere": false,
+      "levels": 2,
+      "alpha": 0.05,
+      "placement": "per_block",
+      "seed": 42,
+      "val_bpb": 1.749917,
+      "success": true
+    },
+    {
+      "name": "baseline",
+      "hopf": false,
+      "hypersphere": false,
+      "levels": 2,
+      "alpha": 0.05,
+      "placement": "per_block",
+      "seed": 43,
+      "val_bpb": 1.750516,
+      "success": true
+    },
+    {
+      "name": "hopf_winner",
+      "hopf": true,
+      "hypersphere": false,
+      "levels": 2,
+      "alpha": 0.05,
+      "placement": "per_block",
+      "seed": 42,
+      "val_bpb": 1.734963,
+      "success": true
+    },
+    {
+      "name": "hopf_winner",
+      "hopf": true,
+      "hypersphere": false,
+      "levels": 2,
+      "alpha": 0.05,
+      "placement": "per_block",
+      "seed": 43,
+      "val_bpb": 1.75293,
+      "success": true
+    },
+    {
+      "name": "hypersphere",
+      "hopf": false,
+      "hypersphere": true,
+      "levels": 2,
+      "alpha": 0.05,
+      "placement": "per_block",
+      "seed": 42,
+      "val_bpb": 1.816053,
+      "success": true
+    },
+    {
+      "name": "hypersphere",
+      "hopf": false,
+      "hypersphere": true,
+      "levels": 2,
+      "alpha": 0.05,
+      "placement": "per_block",
+      "seed": 43,
+      "val_bpb": 1.776178,
+      "success": true
+    },
+    {
+      "name": "hopf_input",
+      "hopf": true,
+      "hypersphere": false,
+      "levels": 2,
+      "alpha": 0.05,
+      "placement": "input",
+      "seed": 42,
+      "val_bpb": 1.755074,
+      "success": true
+    },
+    {
+      "name": "hopf_input",
+      "hopf": true,
+      "hypersphere": false,
+      "levels": 2,
+      "alpha": 0.05,
+      "placement": "input",
+      "seed": 43,
+      "val_bpb": 1.735981,
+      "success": true
+    },
+    {
+      "name": "hopf_alpha_0.08",
+      "hopf": true,
+      "hypersphere": false,
+      "levels": 2,
+      "alpha": 0.08,
+      "placement": "per_block",
+      "seed": 42,
+      "val_bpb": 1.75072,
+      "success": true
+    },
+    {
+      "name": "hopf_alpha_0.08",
+      "hopf": true,
+      "hypersphere": false,
+      "levels": 2,
+      "alpha": 0.08,
+      "placement": "per_block",
+      "seed": 43,
+      "val_bpb": 1.767255,
+      "success": true
+    },
+    {
+      "name": "hopf_alpha_0.03",
+      "hopf": true,
+      "hypersphere": false,
+      "levels": 2,
+      "alpha": 0.03,
+      "placement": "per_block",
+      "seed": 42,
+      "val_bpb": 1.740282,
+      "success": true
+    },
+    {
+      "name": "hopf_alpha_0.03",
+      "hopf": true,
+      "hypersphere": false,
+      "levels": 2,
+      "alpha": 0.03,
+      "placement": "per_block",
+      "seed": 43,
+      "val_bpb": 1.736424,
+      "success": true
+    }
+  ],
+  "summary": {
+    "baseline": {
+      "mean": 1.7502165,
+      "std": 0.00042355696193075343,
+      "n": 2
+    },
+    "hopf_winner": {
+      "mean": 1.7439465,
+      "std": 0.012704587537578747,
+      "n": 2
+    },
+    "hypersphere": {
+      "mean": 1.7961155,
+      "std": 0.0281958828998135,
+      "n": 2
+    },
+    "hopf_input": {
+      "mean": 1.7455275000000001,
+      "std": 0.013500789773194771,
+      "n": 2
+    },
+    "hopf_alpha_0.08": {
+      "mean": 1.7589875,
+      "std": 0.01169201062691954,
+      "n": 2
+    },
+    "hopf_alpha_0.03": {
+      "mean": 1.738353,
+      "std": 0.0027280179618177987,
+      "n": 2
+    }
+  }
+}

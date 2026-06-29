@@ -588,7 +588,7 @@ WINDOW_PATTERN = "L"    # sliding window pattern: L=full, S=half context
 # Hopf Latent Spaces (see theory/HOPF_LATENT_SPACES.md)
 USE_HOPF_LATENT = True       # enable nested Hopf fibration projector
 HOPF_NUM_LEVELS = 2           # nesting depth (1 = single S^3 -> S^2 fibration)
-HOPF_MIX_ALPHA = 0.05          # blend: alpha * hopf(x) + (1-alpha) * x
+HOPF_MIX_ALPHA = 0.03          # blend: alpha * hopf(x) + (1-alpha) * x
 HOPF_PLACEMENT = "per_block"      # "input" (after embedding) or "per_block"
 USE_HYPERSPHERE_LATENT = False  # ablation: unit-sphere normalization only
 
@@ -613,9 +613,9 @@ DEVICE_BATCH_SIZE = 16  # per-device batch size (reduce if OOM)
 # ---------------------------------------------------------------------------
 
 t_start = time.time()
-torch.manual_seed(42)
+torch.manual_seed(43)
 if torch.cuda.is_available():
-    torch.cuda.manual_seed(42)
+    torch.cuda.manual_seed(43)
 torch.set_float32_matmul_precision("high")
 
 # Detect device

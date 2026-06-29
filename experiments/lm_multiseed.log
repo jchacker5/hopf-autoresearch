@@ -1,1 +1,56 @@
 Running baseline seed=42...
+  val_bpb=1.749917
+Running baseline seed=43...
+  val_bpb=1.750516
+Running hopf_winner seed=42...
+  val_bpb=1.734963
+Running hopf_winner seed=43...
+  val_bpb=1.75293
+Running hypersphere seed=42...
+  val_bpb=1.816053
+Running hypersphere seed=43...
+  val_bpb=1.776178
+Running hopf_input seed=42...
+  val_bpb=1.755074
+Running hopf_input seed=43...
+  val_bpb=1.735981
+Running hopf_alpha_0.08 seed=42...
+  val_bpb=1.75072
+Running hopf_alpha_0.08 seed=43...
+  val_bpb=1.767255
+Running hopf_alpha_0.03 seed=42...
+  val_bpb=1.740282
+Running hopf_alpha_0.03 seed=43...
+  val_bpb=1.736424
+{
+  "baseline": {
+    "mean": 1.7502165,
+    "std": 0.00042355696193075343,
+    "n": 2
+  },
+  "hopf_winner": {
+    "mean": 1.7439465,
+    "std": 0.012704587537578747,
+    "n": 2
+  },
+  "hypersphere": {
+    "mean": 1.7961155,
+    "std": 0.0281958828998135,
+    "n": 2
+  },
+  "hopf_input": {
+    "mean": 1.7455275000000001,
+    "std": 0.013500789773194771,
+    "n": 2
+  },
+  "hopf_alpha_0.08": {
+    "mean": 1.7589875,
+    "std": 0.01169201062691954,
+    "n": 2
+  },
+  "hopf_alpha_0.03": {
+    "mean": 1.738353,
+    "std": 0.0027280179618177987,
+    "n": 2
+  }
+}

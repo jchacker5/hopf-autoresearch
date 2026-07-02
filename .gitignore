@@ -20,3 +20,6 @@ AGENTS.md
 dev/
 results.tsv
 run.log
+overnight.log
+overnight_summary.txt
+data/

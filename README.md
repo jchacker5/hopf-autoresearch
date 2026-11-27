@@ -70,6 +70,8 @@ results.tsv             # Local experiment log (gitignored)
 
 ---
 
+The 0.7% LM result is exploratory: it is from two five-minute seeds after configuration search, on validation text. It does not establish a causal contribution from the Hopf map, a large-scale language-model advantage, or a physical mechanism. See the [skeptic review](paper/SKEPTIC_REVIEW.md) for the matched-compute controls and independent data needed for confirmation.
+
 ## Run all benchmarks
 
 ```bash
